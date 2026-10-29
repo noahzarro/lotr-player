@@ -1,0 +1,5 @@
+python-vlc
+fastapi
+uvicorn
+PyJWT
+qrcode[pil]
