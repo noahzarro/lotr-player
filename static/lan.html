@@ -2,7 +2,7 @@
 <title>Movie player</title><link rel=stylesheet href="/static/theme.css">
 <div class=wrap>
 <h1>Movie player</h1>
-<div class=card><h2>Now playing</h2><div class=now id=status>...</div><div class=muted id=sub></div><div class=bar><div id=prog></div></div></div>
+<div class=card><h2>Now playing</h2><div class=now id=status>...</div><div class=muted id=sub></div><input type=range id=seek min=0 max=1000 value=0 step=1 disabled></div>
 <div class=card id=pair hidden>
   <h2>Pair this device</h2>
   <input id=code placeholder="One-time code">
@@ -20,20 +20,22 @@
 </div>
 <script>
 const $=id=>document.getElementById(id);
-let last=null;
+let last=null,dragging=false,authed=false;
 const fmt=s=>{s=Math.floor(s);return Math.floor(s/3600)+':'+String(Math.floor(s/60)%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 async function post(a,body){
   const r=await fetch('/api/'+a,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
   if(r.status==401)showPair();
 }
 function rel(d){if(last&&last.position_s!=null)post('seek',{seconds:last.position_s+d})}
-function showPair(){$('pair').hidden=false;$('ctl').hidden=true}
+function showPair(){authed=false;$('pair').hidden=false;$('ctl').hidden=true}
 async function status(){
   try{
     last=await (await fetch('/api/status')).json();
     $('status').textContent=last.movie||'Nothing playing';
     $('sub').textContent=last.movie?`${last.state} · ${fmt(last.position_s||0)} / ${last.length_s?fmt(last.length_s):'?'}`:'';
-    $('prog').style.width=(last.movie&&last.length_s?100*last.position_s/last.length_s:0)+'%';
+    const can=authed&&last.movie&&last.length_s;
+    $('seek').disabled=!can;
+    if(!dragging)$('seek').value=can?1000*last.position_s/last.length_s:0;
   }catch(e){}
 }
 async function init(){
@@ -42,7 +44,7 @@ async function init(){
   const r=await fetch('/api/me');
   if(!r.ok){showPair();return}
   $('me').textContent=(await r.json()).name;
-  $('pair').hidden=true;$('ctl').hidden=false;
+  authed=true;$('pair').hidden=true;$('ctl').hidden=false;
   const m=await (await fetch('/api/movies')).json();
   $('movies').innerHTML='';
   m.forEach(f=>{const li=document.createElement('li'),b=document.createElement('button');
@@ -52,6 +54,13 @@ async function init(){
     b.onclick=()=>post('play',{name:f.name});li.append(b);$('movies').append(li)});
   if(!m.length)$('movies').innerHTML='<li class=muted>No movies found</li>';
 }
+const sk=$('seek');
+sk.addEventListener('input',()=>{dragging=true;
+  if(last&&last.length_s)$('sub').textContent=`seek to ${fmt(sk.value/1000*last.length_s)} / ${fmt(last.length_s)}`});
+sk.addEventListener('change',async()=>{
+  if(last&&last.length_s)await post('seek',{seconds:sk.value/1000*last.length_s});
+  dragging=false;
+});
 $('go').onclick=async()=>{
   const r=await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({code:$('code').value.trim(),name:$('name').value})});
