@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 import qrcode
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
@@ -38,6 +39,7 @@ def lan_ip() -> str:
 
 def create_local_app(auth: Auth, lan_port: int) -> FastAPI:
     app = FastAPI()
+    app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
     @app.get("/")
     def index():

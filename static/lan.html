@@ -1,22 +1,22 @@
 <!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
-<title>Movie player</title>
-<style>body{font-family:sans-serif;max-width:600px;margin:1em auto;padding:0 1em}
-button,input{font-size:1.1em;padding:.5em;margin:.2em}li{margin:.4em 0}</style>
+<title>Movie player</title><link rel=stylesheet href="/static/theme.css">
+<div class=wrap>
 <h1>Movie player</h1>
-<div id=status>...</div>
-<div id=pair hidden>
+<div class=card><h2>Now playing</h2><div class=now id=status>...</div><div class=muted id=sub></div><div class=bar><div id=prog></div></div></div>
+<div class=card id=pair hidden>
   <h2>Pair this device</h2>
-  <input id=code placeholder="one-time code"><br>
-  <input id=name placeholder="your name"><br>
-  <button id=go>Pair</button> <span id=err style="color:red"></span>
+  <input id=code placeholder="One-time code">
+  <input id=name placeholder="Your name">
+  <button class=primary id=go>Pair</button> <span id=err></span>
 </div>
 <div id=ctl hidden>
-  <p>Hello <b id=me></b></p>
-  <button onclick="post('resume')">Resume</button>
-  <button onclick="post('pause')">Pause</button>
-  <button onclick="post('stop')">Stop</button><br>
-  <button onclick="rel(-30)">-30s</button><button onclick="rel(30)">+30s</button>
-  <h2>Movies</h2><ul id=movies></ul>
+  <div class=card>
+    <p class=muted style="margin-top:0">Hello <b id=me></b></p>
+    <div class=row><button class=primary onclick="post('resume')">Resume</button><button onclick="post('pause')">Pause</button><button onclick="post('stop')">Stop</button></div>
+    <div class=row><button onclick="rel(-30)">-30s</button><button onclick="rel(30)">+30s</button></div>
+  </div>
+  <div class=card><h2>Movies</h2><ul id=movies></ul></div>
+</div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
@@ -31,7 +31,9 @@ function showPair(){$('pair').hidden=false;$('ctl').hidden=true}
 async function status(){
   try{
     last=await (await fetch('/api/status')).json();
-    $('status').textContent=last.movie?`${last.movie} [${last.state}] ${fmt(last.position_s||0)} / ${last.length_s?fmt(last.length_s):'?'}`:'Nothing playing';
+    $('status').textContent=last.movie||'Nothing playing';
+    $('sub').textContent=last.movie?`${last.state} · ${fmt(last.position_s||0)} / ${last.length_s?fmt(last.length_s):'?'}`:'';
+    $('prog').style.width=(last.movie&&last.length_s?100*last.position_s/last.length_s:0)+'%';
   }catch(e){}
 }
 async function init(){
@@ -44,8 +46,8 @@ async function init(){
   const m=await (await fetch('/api/movies')).json();
   $('movies').innerHTML='';
   m.forEach(f=>{const li=document.createElement('li'),b=document.createElement('button');
-    b.textContent='▶ '+f;b.onclick=()=>post('play',{filename:f});li.append(b);$('movies').append(li)});
-  if(!m.length)$('movies').textContent='No movies found';
+    b.textContent='▶  '+f;b.onclick=()=>post('play',{filename:f});li.append(b);$('movies').append(li)});
+  if(!m.length)$('movies').innerHTML='<li class=muted>No movies found</li>';
 }
 $('go').onclick=async()=>{
   const r=await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json'},

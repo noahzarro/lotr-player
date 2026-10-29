@@ -1,19 +1,22 @@
 <!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
-<title>Movie player admin</title>
-<style>body{font-family:sans-serif;max-width:600px;margin:2em auto}img{width:300px;image-rendering:pixelated}</style>
+<title>Movie player admin</title><link rel=stylesheet href="/static/theme.css">
+<div class=wrap>
 <h1>Movie player admin</h1>
-<button id=add>Add new device</button>
-<div id=pair></div>
-<h2>Paired devices</h2><ul id=devs></ul>
+<div class=card>
+  <button class=primary id=add>Add new device</button>
+  <div id=pair style="margin-top:16px"></div>
+</div>
+<div class=card><h2>Paired devices</h2><ul id=devs></ul></div>
+</div>
 <script>
+const esc=s=>s.replace(/[<>&"']/g,'');
 async function devs(){
   const d=await (await fetch('/api/devices')).json();
-  document.getElementById('devs').innerHTML=d.map(x=>`<li>${x.name.replace(/[<&]/g,'')} (${new Date(x.paired_at*1000).toLocaleString()})</li>`).join('')||'<li>none</li>';
+  document.getElementById('devs').innerHTML=d.map(x=>`<li>${esc(x.name)} <span class=muted>${new Date(x.paired_at*1000).toLocaleString()}</span></li>`).join('')||'<li class=muted>No devices yet</li>';
 }
 document.getElementById('add').onclick=async()=>{
   const r=await (await fetch('/api/code',{method:'POST'})).json();
-  const p=document.getElementById('pair');
-  p.innerHTML=`<p>Scan, or open the link. Valid ${r.expires_in/60} min, single use.</p><img src="${r.qr}"><p>Code: <b>${r.code}</b></p><p>${r.url}</p>`;
+  document.getElementById('pair').innerHTML=`<p class=muted>Scan with your phone. Valid ${r.expires_in/60} min, single use.</p><div class=qr><img src="${r.qr}"></div><p>Code: <span class=code>${r.code}</span></p><p class=muted>${r.url}</p>`;
 };
 devs();setInterval(devs,3000);
 </script>

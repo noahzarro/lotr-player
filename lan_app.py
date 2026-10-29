@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from fastapi.staticfiles import StaticFiles
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -25,6 +26,7 @@ class SeekReq(BaseModel):
 
 def create_lan_app(player: Player, auth: Auth) -> FastAPI:
     app = FastAPI()
+    app.mount("/static", StaticFiles(directory=STATIC), name="static")
     protected = [Depends(auth.dependency())]
 
     @app.get("/")

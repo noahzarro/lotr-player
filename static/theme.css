@@ -1,0 +1,30 @@
+:root{--bg:#0f0b1a;--card:#191328;--card2:#221a36;--border:#2e2447;--text:#ece8f7;--muted:#9a90b8;--accent:#8b5cf6;--accent2:#a78bfa;--danger:#f87171;--r:16px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.wrap{max-width:640px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.6rem;margin:0 0 20px;letter-spacing:-.02em}
+h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+button,input{font:inherit;color:var(--text);border-radius:12px;border:1px solid var(--border);background:var(--card2);padding:12px 16px;transition:background .15s,border-color .15s,transform .05s}
+input{width:100%;margin-bottom:10px;outline:none}
+input:focus{border-color:var(--accent)}
+button{cursor:pointer}
+button:hover{background:#2c2247;border-color:var(--accent)}
+button:active{transform:scale(.97)}
+button.primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+button.primary:hover{background:#7c3aed}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.row button{flex:1}
+ul{list-style:none;margin:0;padding:0}
+#movies li{margin:0 0 8px}
+#movies button{width:100%;text-align:left}
+#devs li{padding:10px 0;border-bottom:1px solid var(--border)}
+#devs li:last-child{border:0}
+.muted{color:var(--muted);font-size:.9rem}
+.now{font-size:1.05rem;font-weight:600}
+.bar{height:6px;background:var(--card2);border-radius:99px;margin-top:12px;overflow:hidden}
+.bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width .9s linear}
+.qr{background:#fff;border-radius:14px;padding:12px;display:inline-block}
+.qr img{width:260px;display:block;image-rendering:pixelated}
+code,.code{background:var(--card2);padding:2px 8px;border-radius:8px;color:var(--accent2)}
+#err{color:var(--danger)}
