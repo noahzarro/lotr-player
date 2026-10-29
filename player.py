@@ -5,6 +5,8 @@ from pathlib import Path
 import vlc
 
 VIDEO_EXTS = {".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v", ".mpg", ".mpeg", ".wmv"}
+SUB_EXTS = {".srt", ".sub", ".ass", ".ssa", ".vtt", ".smi"}
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
 
 
 class Player:
@@ -16,24 +18,55 @@ class Player:
         self._player = self._instance.media_player_new()
         self._current: str | None = None
 
-    def list_movies(self) -> list[str]:
-        if not self.movie_dir.is_dir():
-            return []
-        return sorted(
-            p.name for p in self.movie_dir.iterdir()
-            if p.is_file() and p.suffix.lower() in VIDEO_EXTS
-        )
+    def _find(self, folder: Path, stem: str, exts: set[str]) -> Path | None:
+        for p in sorted(folder.iterdir()):
+            if p.is_file() and p.stem.lower() == stem and p.suffix.lower() in exts:
+                return p
+        return None
 
-    def play(self, filename: str) -> bool:
+    def _entry(self, folder: Path) -> dict | None:
+        movie = self._find(folder, "movie", VIDEO_EXTS)
+        if movie is None:
+            return None
+        return {
+            "name": folder.name,
+            "movie": movie,
+            "sub": self._find(folder, "sub", SUB_EXTS),
+            "image": self._find(folder, "image", IMAGE_EXTS),
+        }
+
+    def _entries(self) -> dict[str, dict]:
+        if not self.movie_dir.is_dir():
+            return {}
+        out = {}
+        for d in sorted(self.movie_dir.iterdir()):
+            if d.is_dir():
+                e = self._entry(d)
+                if e:
+                    out[e["name"]] = e
+        return out
+
+    def list_movies(self) -> list[dict]:
+        return [{"name": n, "has_image": e["image"] is not None, "has_sub": e["sub"] is not None}
+                for n, e in self._entries().items()]
+
+    def image_path(self, name: str) -> Path | None:
+        e = self._entries().get(name)
+        return e["image"] if e else None
+
+    def play(self, name: str) -> bool:
         # Only names from the listing are accepted -> no path traversal.
-        if filename not in self.list_movies():
+        e = self._entries().get(name)
+        if e is None:
             return False
         with self._lock:
-            media = self._instance.media_new(str(self.movie_dir / filename))
+            media = self._instance.media_new(str(e["movie"]))
+            if e["sub"]:
+                media.add_option(f":sub-file={e['sub']}")
             self._player.set_media(media)
             self._player.play()
             self._player.set_fullscreen(self.fullscreen)
-            self._current = filename
+            self._current = name
         return True
 
     def pause(self):

@@ -46,7 +46,10 @@ async function init(){
   const m=await (await fetch('/api/movies')).json();
   $('movies').innerHTML='';
   m.forEach(f=>{const li=document.createElement('li'),b=document.createElement('button');
-    b.textContent='▶  '+f;b.onclick=()=>post('play',{filename:f});li.append(b);$('movies').append(li)});
+    b.className='movie';
+    if(f.has_image){const i=document.createElement('img');i.src='/api/movies/image?name='+encodeURIComponent(f.name);i.loading='lazy';b.append(i)}
+    const t=document.createElement('span');t.textContent=f.name;b.append(t);
+    b.onclick=()=>post('play',{name:f.name});li.append(b);$('movies').append(li)});
   if(!m.length)$('movies').innerHTML='<li class=muted>No movies found</li>';
 }
 $('go').onclick=async()=>{

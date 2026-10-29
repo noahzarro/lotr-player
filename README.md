@@ -32,8 +32,18 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-Put your videos in the `movies/` folder. The path is hardcoded as `MOVIE_DIR` at the top of `main.py`.
-Supported extensions: mp4, mkv, avi, mov, webm, m4v, mpg, mpeg, wmv.
+Put one folder per movie in the `movies/` folder. The path is hardcoded as `MOVIE_DIR` at the top
+of `main.py`. The folder name is the movie name.
+
+```
+movies/
+  The Fellowship of the Ring/
+    movie.mkv     required (mp4, mkv, avi, mov, webm, m4v, mpg, mpeg, wmv)
+    sub.srt       optional subtitles (srt, sub, ass, ssa, vtt, smi), loaded into VLC
+    image.jpg     cover shown in the selection screen (jpg, jpeg, png, webp, gif, bmp)
+```
+
+Folders without a `movie.<ext>` file are ignored.
 
 ## Run
 
@@ -63,8 +73,9 @@ and seek (+/-30 s). Unpaired devices only see the pairing form and the status.
 Protected endpoints (cookie `token` or header `Authorization: Bearer <jwt>`):
 
 - `GET /api/me`
-- `GET /api/movies`
-- `POST /api/play` with `{filename}`
+- `GET /api/movies` returns `[{name, has_image, has_sub}]`
+- `GET /api/movies/image?name=<name>`
+- `POST /api/play` with `{name}`
 - `POST /api/pause`
 - `POST /api/resume`
 - `POST /api/stop`
@@ -101,7 +112,7 @@ Example response while a movie plays:
 
 ```json
 {
-  "movie": "fellowship.mkv",
+  "movie": "The Fellowship of the Ring",
   "state": "playing",
   "position_s": 1234.5,
   "length_s": 10680.0,
@@ -111,7 +122,7 @@ Example response while a movie plays:
 
 | Field | Meaning |
 |---|---|
-| `movie` | File name of the current movie, or `null` if nothing is loaded. |
+| `movie` | Folder name of the current movie, or `null` if nothing is loaded. |
 | `state` | `playing`, `paused`, `loading` or `stopped`. |
 | `position_s` | Playback position in seconds, or `null` if nothing is playing. |
 | `length_s` | Movie length in seconds, or `null` if unknown. |

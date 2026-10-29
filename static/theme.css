@@ -28,3 +28,6 @@ ul{list-style:none;margin:0;padding:0}
 .qr img{width:260px;display:block;image-rendering:pixelated}
 code,.code{background:var(--card2);padding:2px 8px;border-radius:8px;color:var(--accent2)}
 #err{color:var(--danger)}
+#movies button.movie{display:flex;align-items:center;gap:14px;padding:10px}
+.movie img{width:64px;height:92px;object-fit:cover;border-radius:10px;flex:none;background:var(--card)}
+.movie span{font-weight:600}

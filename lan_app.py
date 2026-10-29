@@ -17,7 +17,7 @@ class PairReq(BaseModel):
 
 
 class PlayReq(BaseModel):
-    filename: str
+    name: str
 
 
 class SeekReq(BaseModel):
@@ -57,9 +57,16 @@ def create_lan_app(player: Player, auth: Auth) -> FastAPI:
     def movies():
         return player.list_movies()
 
+    @app.get("/api/movies/image", dependencies=protected)
+    def movie_image(name: str):
+        p = player.image_path(name)
+        if p is None:
+            raise HTTPException(404, "no image")
+        return FileResponse(p)
+
     @app.post("/api/play", dependencies=protected)
     def play(req: PlayReq):
-        if not player.play(req.filename):
+        if not player.play(req.name):
             raise HTTPException(404, "unknown movie")
         return {"ok": True}
 
