@@ -1,6 +1,7 @@
 import base64
 import io
-import socket
+import ipaddress
+import subprocess
 from pathlib import Path
 
 import qrcode
@@ -12,15 +13,27 @@ from auth import Auth
 STATIC = Path(__file__).parent / "static"
 
 
+SKIP_IFACES = ("lo", "tailscale", "virbr", "docker", "br-", "veth", "zt", "wg", "tun")
+
+
 def lan_ip() -> str:
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    """Return the IPv4 address of a physical LAN interface (RFC1918),
+    ignoring Tailscale (100.64/10), VM bridges, docker, VPNs, etc."""
     try:
-        s.connect(("10.255.255.255", 1))  # no packet is actually sent
-        return s.getsockname()[0]
-    except OSError:
-        return "127.0.0.1"
-    finally:
-        s.close()
+        out = subprocess.run(["ip", "-o", "-4", "addr", "show"], capture_output=True,
+                             text=True, timeout=3).stdout
+    except (OSError, subprocess.SubprocessError):
+        out = ""
+    candidates = []
+    for line in out.splitlines():
+        parts = line.split()
+        iface, addr = parts[1], parts[3].split("/")[0]
+        if iface.startswith(SKIP_IFACES):
+            continue
+        ip = ipaddress.ip_address(addr)
+        if ip.is_private and not ip.is_loopback and not ip.is_link_local:
+            candidates.append(addr)
+    return candidates[0] if candidates else "127.0.0.1"
 
 
 def create_local_app(auth: Auth, lan_port: int) -> FastAPI:
