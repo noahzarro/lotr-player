@@ -1,7 +1,10 @@
+import json
+import os
 import secrets
 import threading
 import time
 import uuid
+from pathlib import Path
 
 import jwt
 from fastapi import HTTPException, Request
@@ -10,11 +13,36 @@ CODE_TTL = 300  # seconds
 
 
 class Auth:
-    def __init__(self):
+    def __init__(self, store: Path):
+        self._store = store
         self._secret = secrets.token_urlsafe(32)
         self._codes: dict[str, float] = {}
         self._devices: dict[str, dict] = {}  # device_id -> info
         self._lock = threading.Lock()
+        self._load()
+
+    def _load(self):
+        try:
+            data = json.loads(self._store.read_text())
+            self._secret = data["secret"]
+            self._devices = data["devices"]
+        except (OSError, ValueError, KeyError):
+            self._save()
+
+    def _save(self):
+        # caller holds the lock (or is __init__)
+        tmp = self._store.with_suffix(".tmp")
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            json.dump({"secret": self._secret, "devices": self._devices}, f)
+        os.replace(tmp, self._store)
+
+    def clear(self):
+        """Revoke all devices and rotate the signing secret."""
+        with self._lock:
+            self._devices = {}
+            self._secret = secrets.token_urlsafe(32)
+            self._save()
 
     def create_code(self) -> str:
         code = secrets.token_urlsafe(8)
@@ -36,6 +64,7 @@ class Auth:
                 self._secret, algorithm="HS256",
             )
             self._devices[device_id] = {"id": device_id, "name": name, "paired_at": time.time(), "token": token}
+            self._save()
             return token
 
     def verify(self, token: str | None) -> dict | None:

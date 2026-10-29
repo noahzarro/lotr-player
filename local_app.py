@@ -54,6 +54,11 @@ def create_local_app(auth: Auth, lan_port: int) -> FastAPI:
         png = base64.b64encode(buf.getvalue()).decode()
         return {"code": code, "url": url, "qr": f"data:image/png;base64,{png}", "expires_in": 300}
 
+    @app.post("/api/clear")
+    def clear():
+        auth.clear()
+        return {"ok": True}
+
     @app.get("/api/devices")
     def devices():
         return auth.devices()

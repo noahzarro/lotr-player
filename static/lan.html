@@ -13,7 +13,7 @@
   <div class=card>
     <p class=muted style="margin-top:0">Hello <b id=me></b></p>
     <div class=row><button class=primary onclick="post('resume')">Resume</button><button onclick="post('pause')">Pause</button><button onclick="post('stop')">Stop</button></div>
-    <div class=row><button onclick="rel(-30)">-30s</button><button onclick="rel(30)">+30s</button></div>
+    <div class=row><button onclick="rel(-30)">-30s</button><button onclick="rel(30)">+30s</button><button id=subs onclick="toggleSubs()" disabled>Subtitles</button></div>
   </div>
   <div class=card><h2>Movies</h2><ul id=movies></ul></div>
 </div>
@@ -26,6 +26,7 @@ async function post(a,body){
   const r=await fetch('/api/'+a,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
   if(r.status==401)showPair();
 }
+function toggleSubs(){if(last&&last.subtitles)post('subtitles',{enabled:!last.subtitles.enabled})}
 function rel(d){if(last&&last.position_s!=null)post('seek',{seconds:last.position_s+d})}
 function showPair(){authed=false;$('pair').hidden=false;$('ctl').hidden=true}
 async function status(){
@@ -33,6 +34,10 @@ async function status(){
     last=await (await fetch('/api/status')).json();
     $('status').textContent=last.movie||'Nothing playing';
     $('sub').textContent=last.movie?`${last.state} · ${fmt(last.position_s||0)} / ${last.length_s?fmt(last.length_s):'?'}`:'';
+    const st=last.subtitles||{};
+    $('subs').disabled=!(authed&&st.available);
+    $('subs').textContent='Subtitles: '+(st.enabled?'on':'off');
+    $('subs').classList.toggle('primary',!!st.enabled);
     const can=authed&&last.movie&&last.length_s;
     $('seek').disabled=!can;
     if(!dragging)$('seek').value=can?1000*last.position_s/last.length_s:0;

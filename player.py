@@ -14,7 +14,7 @@ class Player:
         self.movie_dir = movie_dir
         self.fullscreen = fullscreen
         self._lock = threading.Lock()
-        self._instance = vlc.Instance()
+        self._instance = vlc.Instance("--vout=xcb_xv")
         self._player = self._instance.media_player_new()
         self._current: str | None = None
 
@@ -84,6 +84,23 @@ class Player:
             self._player.stop()
             self._current = None
 
+    def _spu_tracks(self) -> list[int]:
+        return [t[0] for t in (self._player.video_get_spu_description() or []) if t[0] != -1]
+
+    def set_subtitles(self, enabled: bool) -> bool:
+        with self._lock:
+            if self._current is None:
+                return False
+            if not enabled:
+                self._player.video_set_spu(-1)
+                return True
+            tracks = self._spu_tracks()
+            if not tracks:
+                return False
+            # external sub-file is appended after embedded tracks
+            self._player.video_set_spu(tracks[-1])
+            return True
+
     def seek(self, seconds: float):
         with self._lock:
             length = self._player.get_length()
@@ -98,6 +115,9 @@ class Player:
             pos = self._player.get_time()
             length = self._player.get_length()
             current = self._current
+            tracks = self._spu_tracks() if current else []
+            subs = {"available": bool(tracks),
+                    "enabled": bool(current) and self._player.video_get_spu() not in (-1, None)}
             lookup = time.time()
         if current is None or state in (vlc.State.Stopped, vlc.State.Ended, vlc.State.NothingSpecial):
             if state == vlc.State.Ended:
@@ -114,5 +134,6 @@ class Player:
             "state": state_name,
             "position_s": max(pos, 0) / 1000 if current else None,
             "length_s": length / 1000 if current and length > 0 else None,
+            "subtitles": subs,
             "lookup_time": lookup,
         }

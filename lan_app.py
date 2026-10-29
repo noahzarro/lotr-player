@@ -20,6 +20,10 @@ class PlayReq(BaseModel):
     name: str
 
 
+class SubReq(BaseModel):
+    enabled: bool
+
+
 class SeekReq(BaseModel):
     seconds: float
 
@@ -83,6 +87,12 @@ def create_lan_app(player: Player, auth: Auth) -> FastAPI:
     @app.post("/api/stop", dependencies=protected)
     def stop():
         player.stop()
+        return {"ok": True}
+
+    @app.post("/api/subtitles", dependencies=protected)
+    def subtitles(req: SubReq):
+        if not player.set_subtitles(req.enabled):
+            raise HTTPException(409, "no subtitle track available")
         return {"ok": True}
 
     @app.post("/api/seek", dependencies=protected)

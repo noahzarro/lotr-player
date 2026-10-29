@@ -59,8 +59,10 @@ Then open `http://127.0.0.1:8001` on the host.
 2. Scan the QR code with the device. It opens the LAN site with the code prefilled.
 3. Enter a name and press **Pair**. The server returns a JWT, which is stored in a cookie.
 
-A code is valid for 5 minutes and can be used once. Tokens are kept in memory only, so
-restarting the script invalidates all paired devices.
+A code is valid for 5 minutes and can be used once. Paired devices and the JWT signing secret are
+stored in `tokens.json` (permissions 600) next to `main.py`, so devices stay paired across restarts.
+To revoke everyone, press **Clear all tokens** on the admin page. This also rotates the signing
+secret. Deleting `tokens.json` while the script is stopped does the same.
 
 The QR code uses the first private IPv4 address of a physical interface. Tailscale, VM bridges,
 docker and VPN interfaces are skipped (see `lan_ip()` in `local_app.py`).
@@ -79,6 +81,7 @@ Protected endpoints (cookie `token` or header `Authorization: Bearer <jwt>`):
 - `POST /api/pause`
 - `POST /api/resume`
 - `POST /api/stop`
+- `POST /api/subtitles` with `{enabled}` (true/false)
 - `POST /api/seek` with `{seconds}`
 
 ## Files
@@ -116,6 +119,7 @@ Example response while a movie plays:
   "state": "playing",
   "position_s": 1234.5,
   "length_s": 10680.0,
+  "subtitles": {"available": true, "enabled": false},
   "lookup_time": 1761758400.123
 }
 ```
@@ -126,6 +130,7 @@ Example response while a movie plays:
 | `state` | `playing`, `paused`, `loading` or `stopped`. |
 | `position_s` | Playback position in seconds, or `null` if nothing is playing. |
 | `length_s` | Movie length in seconds, or `null` if unknown. |
+| `subtitles` | `available`: a subtitle track exists; `enabled`: it is currently shown. |
 | `lookup_time` | Unix time (seconds) at which the server read the position. |
 
 The position is a snapshot. Between the read and when you receive it, a playing movie has moved
